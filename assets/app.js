@@ -1,3 +1,21 @@
+/**
+ * ============================================================================
+ *  YORVIQUE — FRONT-END APPLICATION
+ * ----------------------------------------------------------------------------
+ *  Handles:
+ *    - Brand asset resolution (favicon, logo, etc.) from brand-config.js
+ *    - Mobile menu toggle + reveal-on-scroll animations
+ *    - Buy Me a Coffee button (no-op when URL is empty)
+ *    - Drag-and-drop and file-picker upload
+ *    - Real upload progress via XMLHttpRequest (when supported by the server)
+ *    - Shareable link display, copy-to-clipboard, open, reset
+ *    - Service worker registration (PWA)
+ *    - Online/offline detection
+ *    - Footer year stamp
+ *  This file is framework-free vanilla JavaScript. It depends on
+ *  /config/brand-config.js being loaded first.
+ * ============================================================================
+ */
 (function () {
   'use strict';
 
