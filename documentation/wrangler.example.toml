@@ -1,0 +1,29 @@
+# Example Cloudflare configuration for YORVIQUE
+# ============================================================================
+# This is an EXAMPLE file. It is NOT used at deploy time when you connect a
+# GitHub repository via the Cloudflare Pages dashboard — the dashboard reads
+# the bindings and environment variables you set in the UI directly.
+#
+# Use this file as a reference if you prefer to deploy with Wrangler CLI
+# instead. To use it:
+#   1. Rename to wrangler.toml
+#   2. Edit the values to match your Cloudflare account.
+#   3. Run: npx wrangler pages deploy . --config wrangler.toml
+# ============================================================================
+
+name = "yorvique"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "."
+
+# R2 bucket binding — REQUIRED for uploads to work.
+# Create the bucket first in the Cloudflare dashboard, then bind it here.
+[[r2_buckets]]
+binding = "YORVIQUE_BUCKET"
+bucket_name = "yorvique-uploads"
+
+# Optional environment variables.
+[vars]
+MAX_FILE_SIZE_MB = "100"
+UPLOAD_RATE_LIMIT_PER_H = "60"
+ALLOWED_ORIGIN = "*"
+# DOWNLOAD_BASE_URL = "https://yorvique.example.com"
