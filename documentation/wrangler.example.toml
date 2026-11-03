@@ -1,0 +1,35 @@
+# Example Cloudflare configuration for YORVIQUE (Cloudinary + KV edition)
+# ============================================================================
+# This is an EXAMPLE file. It is NOT used at deploy time when you connect a
+# GitHub repository via the Cloudflare Pages dashboard — the dashboard reads
+# the bindings and environment variables you set in the UI directly.
+#
+# Use this file as a reference if you prefer to deploy with Wrangler CLI
+# instead. To use it:
+#   1. Rename to wrangler.toml
+#   2. Edit the values to match your Cloudflare + Cloudinary accounts.
+#   3. Run: npx wrangler pages deploy . --config wrangler.toml
+# ============================================================================
+
+name = "yorvique"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "."
+
+# KV namespace binding — REQUIRED for uploads to work.
+# Create the namespace first in the Cloudflare dashboard under
+# Workers & Pages -> KV -> Create a namespace, then bind it here.
+[[kv_namespaces]]
+binding = "YORVIQUE_META"
+id = "your-kv-namespace-id-here"
+
+# Cloudinary credentials — REQUIRED for uploads to work.
+# These are secrets — for production, set them via:
+#   npx wrangler pages secret put CLOUDINARY_API_SECRET
+# instead of putting them in this file.
+[vars]
+CLOUDINARY_CLOUD_NAME = "your-cloud-name"
+CLOUDINARY_API_KEY = "your-api-key"
+# CLOUDINARY_API_SECRET — set via `wrangler pages secret put`, NOT here.
+MAX_FILE_SIZE_MB = "100"
+UPLOAD_RATE_LIMIT_PER_H = "60"
+ALLOWED_ORIGIN = "*"
