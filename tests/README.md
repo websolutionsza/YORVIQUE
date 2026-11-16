@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/34306778/README.md)
 # YORVIQUE — Tests
 
 YORVIQUE does not ship with a unit-test framework (the project is intentionally
@@ -32,5 +31,5 @@ The smoke test exercises:
 - `GET /api/meta/<invalid>` returns 404.
 
 For the full manual checklist (responsive design, PWA install, offline mode,
-Buy Me a Coffee no-op behaviour, footer credit link), see
+Give a Dankiie no-op behaviour and post-success popup, footer credit link), see
 `documentation/deployment-guide.md` → "Verifying the deployment".

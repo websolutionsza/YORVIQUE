@@ -57,15 +57,50 @@ console.log('---------------------------------------------------');
   assert('Homepage contains WebSolutionsSA footer link',
     txt.includes('websolutionssa.pages.dev'),
     'missing WebSolutionsSA link');
-  assert('Homepage contains Buy Me a Coffee button',
-    txt.includes('data-bmc-button'),
-    'missing BMC button');
+  assert('Homepage contains Give a Dankiie button',
+    txt.includes('data-dankiie-button'),
+    'missing Give a Dankiie button');
+  assert('Homepage shows "Give a Dankiie" label text',
+    txt.includes('Give a Dankiie'),
+    'missing Give a Dankiie label');
+  assert('No Buy Me Coffee / BMC remnants on homepage',
+    !/buy me a coffee|bmc-button|data-bmc/i.test(txt),
+    'found stale Buy Me Coffee reference');
   assert('Homepage references the manifest',
     txt.includes('/manifest.json'),
     'missing manifest link');
   assert('Homepage references the service worker (in app.js)',
     txt.includes('/assets/js/app.js'),
     'missing app.js');
+}
+
+// 2b. Give a Dankiie feature wiring (app.js + brand-config.js)
+{
+  const res = await fetchOk(BASE + '/assets/js/app.js');
+  const txt = await res.text();
+  assert('app.js defines the DANKIIE popup trigger',
+    txt.includes('dankiieShowPopup'),
+    'missing dankiieShowPopup');
+  assert('app.js fires popup only on success path',
+    // The CALL dankiieShowPopup(); (with semicolon — only matches a call,
+    // not the function definition) must appear after showShareResult and
+    // before the error branch.
+    txt.indexOf('showShareResult(shareableUrl') > 0 &&
+    txt.indexOf('dankiieShowPopup();') > txt.indexOf('showShareResult(shareableUrl') &&
+    txt.indexOf('dankiieShowPopup();') < txt.indexOf("setStatus(msg, 'error')"),
+    'popup trigger not on success path');
+  assert('app.js has 7-day cooldown constant',
+    txt.includes('7 * 24 * 60 * 60 * 1000'),
+    'missing 7-day cooldown');
+  assert('app.js has 5-second countdown constant',
+    txt.includes('5000'),
+    'missing 5s countdown');
+  assert('app.js respects Escape key for dismissal',
+    txt.includes("e.key === 'Escape'"),
+    'missing Escape dismissal');
+  assert('app.js reads DANKIIE_URL (not BUY_ME_A_COFFEE_URL)',
+    txt.includes('cfg.DANKIIE_URL') && !txt.includes('BUY_ME_A_COFFEE_URL'),
+    'still referencing BUY_ME_A_COFFEE_URL');
 }
 
 // 3. No WebDrop Pro remnants anywhere on the homepage
@@ -106,9 +141,9 @@ console.log('---------------------------------------------------');
   assert('GET /config/brand-config.js → 200 and defines YORVIQUE_CONFIG',
     res.status === 200 && txt.includes('YORVIQUE_CONFIG'),
     'status ' + res.status);
-  assert('Brand config has empty BUY_ME_A_COFFEE_URL by default',
-    txt.includes("BUY_ME_A_COFFEE_URL: ''"),
-    'BMC URL not empty');
+  assert('Brand config has empty DANKIIE_URL by default',
+    txt.includes("DANKIIE_URL: ''"),
+    'DANKIIE_URL not empty');
 }
 
 // 7. Upload a small text file
