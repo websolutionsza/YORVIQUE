@@ -4,7 +4,7 @@
  * ============================================================================
  *  This is the SINGLE source of truth for everything brand-related:
  *    - brand name, tagline, description, microcopy
- *    - the Buy Me a Coffee URL (LEAVE EMPTY until you have a real account)
+ *    - the Give a Dankiie URL (LEAVE EMPTY until the donation page exists)
  *    - every brand image URL (local path + the supplied remote URL)
  *
  *  To replace an asset, change the `local` path (or swap the file in /assets)
@@ -12,12 +12,16 @@
  *  window.YORVIQUE_CONFIG.assets.*.local — so any change here propagates
  *  everywhere automatically.
  *
- *  IMPORTANT — BUY ME A COFFEE:
- *    Leave BUY_ME_A_COFFEE_URL as an empty string ("") until you have a real
- *    Buy Me a Coffee page. While the string is empty, the button stays
+ *  IMPORTANT — GIVE A DANKIIE:
+ *    Leave DANKIIE_URL as an empty string ("") until you have a real donation
+ *    page. While the string is empty, every Give a Dankiie button stays
  *    visible but does ABSOLUTELY NOTHING when clicked (no navigation, no
- *    popup, no error). The moment you paste a real URL in here, the button
- *    becomes a normal external link that opens in a new tab.
+ *    popup, no error). The moment you paste a real URL in here, every Give a
+ *    Dankiie button becomes a normal external link that opens in a new tab.
+ *
+ *    This is the ONLY place the donation URL is configured — app.js, the
+ *    nav button, the footer button and the post-success popup all read from
+ *    this single DANKIIE_URL value.
  * ============================================================================
  */
 (function () {
@@ -39,13 +43,15 @@
     },
 
     // --------------------------------------------------------------------------
-    // BUY ME A COFFEE
+    // GIVE A DANKIIE
     // --------------------------------------------------------------------------
-    // Insert your real Buy Me a Coffee URL between the quotes below, e.g.
-    //   BUY_ME_A_COFFEE_URL: "https://www.buymeacoffee.com/yourname"
-    // Leave it as "" and the button stays visible but inactive.
+    // The single, documented home of the donation URL.
+    // Insert your real donation page URL between the quotes below, e.g.
+    //   DANKIIE_URL: "https://your-donation-page.example.com"
+    // Leave it as "" and every Give a Dankiie button stays visible but
+    // inactive — clicking it produces no navigation, no popup and no error.
     // --------------------------------------------------------------------------
-    BUY_ME_A_COFFEE_URL: '',
+    DANKIIE_URL: '',
 
     // --------------------------------------------------------------------------
     // DEVELOPER CREDIT (footer)
