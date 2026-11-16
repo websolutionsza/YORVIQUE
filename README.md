@@ -17,7 +17,7 @@ YORVIQUE is a minimalist, premium file-sharing web application. Drop a file, get
 6. [Environment variables](#environment-variables)
 7. [Deploy to Cloudflare Pages](#deploy-to-cloudflare-pages)
 8. [Install the PWA](#install-the-pwa)
-9. [Configure the Buy Me a Coffee URL](#configure-the-buy-me-a-coffee-url)
+9. [Configure the Give a Dankiie URL](#configure-the-give-a-dankiie-url)
 10. [Brand image URLs and where they are configured](#brand-image-urls-and-where-they-are-configured)
 11. [Replace the logo and icons](#replace-the-logo-and-icons)
 12. [Security notes](#security-notes)
@@ -78,7 +78,7 @@ YORVIQUE/
 │   └── js/
 │       └── app.js          # Front-end application (upload, copy link, SW registration)
 ├── config/
-│   └── brand-config.js     # ★ Single source of truth for brand + BMC URL + asset URLs
+│   └── brand-config.js     # ★ Single source of truth for brand + DANKIIE_URL + asset URLs
 ├── documentation/
 │   ├── deployment-guide.md # Step-by-step Cloudflare deployment guide
 │   └── wrangler.example.toml # Example Cloudflare config (rename to wrangler.toml)
@@ -212,23 +212,59 @@ Once installed, YORVIQUE opens in its own window, with its own YORVIQUE icon, na
 
 ---
 
-## Configure the Buy Me a Coffee URL
+## Configure the Give a Dankiie URL
 
-Open `config/brand-config.js` and find this line near the top:
+The **Give a Dankiie** feature is the optional support / donation entry point.
+It appears in three places, all driven by a single config value:
+
+- The **Give a Dankiie** button in the site header.
+- The **Give a Dankiie** button in the site footer.
+- The **post-success popup** that appears after a visitor successfully
+  generates a shareable link (subject to a 7-day cooldown).
+
+Open `config/brand-config.js` and find this line near the top — this is the
+**single, documented home of the donation URL**:
 
 ```js
-BUY_ME_A_COFFEE_URL: '',
+DANKIIE_URL: '',
 ```
 
-Paste your real Buy Me a Coffee URL between the quotes, e.g.:
+Paste your real donation page URL between the quotes, e.g.:
 
 ```js
-BUY_ME_A_COFFEE_URL: 'https://www.buymeacoffee.com/yourname',
+DANKIIE_URL: 'https://your-donation-page.example.com',
 ```
 
-While the value is `''` (empty string), the "Buy me a coffee" button stays **visible** in the header and footer, but clicking it does **absolutely nothing** — no navigation, no popup, no error. The moment you put a real URL in, the button becomes a normal external link that opens in a new tab.
+While the value is `''` (empty string), every Give a Dankiie button stays
+**visible** in the header and footer, and the post-success popup still
+appears with its tip-jar icon and countdown — but clicking the button (or
+the popup CTA) does **absolutely nothing**: no navigation, no popup, no
+error. The moment you paste a real URL in, every Give a Dankiie button and
+the popup CTA become normal external links that open in a new tab.
 
-The button is rendered with the `data-bmc-button` attribute in `index.html`, `privacy.html`, `terms.html`, and `404.html`. The behaviour is wired up in `assets/js/app.js` → `initBuyMeACoffee()`.
+The buttons are rendered with the `data-dankiie-button` attribute in
+`index.html`, `privacy.html`, `terms.html`, and `404.html`. The popup is
+built lazily in `assets/js/app.js` → `dankiieShowPopup()`, which is called
+only from the upload success path. The button click behaviour is wired up in
+`assets/js/app.js` → `initGiveADankiie()`. The cooldown is persisted in
+`localStorage` under the key `yorvique_dankiie_dismissed_at`.
+
+### Give a Dankiie popup behaviour
+
+- **Trigger:** only after a genuinely successful link generation (HTTP 2xx
+  with a valid `id` from `/api/upload`). It never fires on failure, empty
+  input, network error, or abort.
+- **Cooldown:** once dismissed (close button, backdrop click, Escape key, or
+  CTA click), a timestamp is written to `localStorage` and the popup will
+  not reappear for 7 days. It also will not reappear in the same browsing
+  session even without the cooldown.
+- **5-second countdown:** a thin progress line depletes over 5 seconds. The
+  visual close (X) button is hidden until the 5 seconds elapse; after that
+  it is revealed. Escape and backdrop click dismiss immediately at any time.
+- **Manual entry points:** the header and footer Give a Dankiie buttons are
+  always available regardless of the popup cooldown.
+- **Reduced motion:** the tip-jar shake animation and the countdown line are
+  disabled when the visitor's OS prefers reduced motion.
 
 ---
 
