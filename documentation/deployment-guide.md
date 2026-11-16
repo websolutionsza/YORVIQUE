@@ -1,4 +1,3 @@
-[deployment-guide.md](https://github.com/user-attachments/files/34306718/deployment-guide.md)
 # YORVIQUE — Deployment Guide (Cloudflare Pages + Cloudinary + KV)
 
 This guide walks you through deploying YORVIQUE using **completely free services that do NOT require a credit card**:
@@ -219,7 +218,12 @@ Run through this checklist:
 - [ ] After installing, the app opens in its own window with the YORVIQUE icon.
 - [ ] Going offline and reloading the homepage still shows the app shell.
 - [ ] The footer shows: "© 2026 YORVIQUE. All rights reserved. | developed by WebSolutionsSA" with WebSolutionsSA linking to https://websolutionssa.pages.dev/ in a new tab.
-- [ ] Clicking "Buy me a coffee" does nothing (while the URL in `brand-config.js` is empty).
+- [ ] Clicking "Give a Dankiie" in the header and footer does nothing (while `DANKIIE_URL` in `config/brand-config.js` is empty).
+- [ ] After a **successful** file upload, the Give a Dankiie support popup appears (heading "Enjoying Yorvique?"), a thin countdown line depletes over 5 seconds, and the X close button is revealed only after the 5 seconds elapse.
+- [ ] Pressing Escape at any time dismisses the popup immediately.
+- [ ] After dismissing the popup, it does **not** reappear on a subsequent successful upload in the same session, nor on reload within 7 days.
+- [ ] The tip-jar icon in the header/footer/popup shakes briefly, pauses, then shakes again, and stops shaking entirely when the OS prefers reduced motion.
+- [ ] A failed upload (wrong type, too large, network error) does **not** trigger the popup.
 
 If all of the above pass, the deployment is complete.
 
@@ -303,7 +307,7 @@ The rollback is instant.
 | Cloudinary API key | Cloudflare env var `CLOUDINARY_API_KEY` | Plain text (or Secret for extra safety) |
 | Cloudinary API secret | Cloudflare env var `CLOUDINARY_API_SECRET` | **Secret** (encrypted) |
 | KV namespace binding | Cloudflare Pages → Settings → Functions → KV namespace bindings | Variable name: `YORVIQUE_META` |
-| Buy Me a Coffee URL | `config/brand-config.js` in your repo | `BUY_ME_A_COFFEE_URL: 'https://...'` |
+| Give a Dankiie URL | `config/brand-config.js` in your repo | `DANKIIE_URL: 'https://...'` (leave `''` until your donation page exists) |
 | Brand logo | `yorvique.png` in your repo root | Overwrite the file |
 | Max upload size | Cloudflare env var `MAX_FILE_SIZE_MB` AND `config/brand-config.js` `STORAGE.maxFileSizeBytes` | Keep them in sync |
 
