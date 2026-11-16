@@ -5,10 +5,11 @@
  *  Handles:
  *    - Brand asset resolution (favicon, logo, etc.) from brand-config.js
  *    - Mobile menu toggle + reveal-on-scroll animations
- *    - Buy Me a Coffee button (no-op when URL is empty)
+ *    - Give a Dankiie button (no-op when DANKIIE_URL is empty)
  *    - Drag-and-drop and file-picker upload
  *    - Real upload progress via XMLHttpRequest (when supported by the server)
  *    - Shareable link display, copy-to-clipboard, open, reset
+ *    - Post-success "Give a Dankiie" support popup (5s countdown, 7-day cooldown)
  *    - Service worker registration (PWA)
  *    - Online/offline detection
  *    - Footer year stamp
@@ -136,14 +137,13 @@
   }
 
   // --------------------------------------------------------------------------
-  // 3. Buy Me a Coffee
-  //    While BUY_ME_A_COFFEE_URL is empty, the button does nothing.
-  //    When a real URL is provided, the button becomes a normal external link.
+  // 3. Give a Dankiie buttons (header + footer entry points)
+  //    While DANKIIE_URL is empty, the buttons do nothing.
+  //    When a real URL is provided, the buttons become external links.
   // --------------------------------------------------------------------------
-  function initBuyMeACoffee() {
-    const url = (cfg.BUY_ME_A_COFFEE_URL || '').trim();
-    $$('[data-bmc-button]').forEach(function (btn) {
-      // Strip the inline click default by making it a no-op until we know
+  function initGiveADankiie() {
+    const url = (cfg.DANKIIE_URL || '').trim();
+    $$('[data-dankiie-button]').forEach(function (btn) {
       btn.addEventListener('click', function (event) {
         if (!url) {
           // Intentionally do nothing — no navigation, no popup, no error.
@@ -154,6 +154,186 @@
         window.open(url, '_blank', 'noopener,noreferrer');
       });
     });
+  }
+
+  // --------------------------------------------------------------------------
+  // 3b. Give a Dankiie — post-success support popup
+  //     Returns { show } where show() is called ONLY after a genuinely
+  //     successful link generation. The popup honours a 7-day localStorage
+  //     cooldown, runs a 5-second countdown line, hides the close button until
+  //     the countdown elapses, and is always dismissible via Escape.
+  // --------------------------------------------------------------------------
+  var DANKIIE_DISMISS_KEY = 'yorvique_dankiie_dismissed_at';
+  var DANKIIE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+  var DANKIIE_COUNTDOWN_MS = 5000;
+  var dankiieState = { node: null, timers: [], shownThisSession: false };
+
+  function dankiieOnCooldown() {
+    try {
+      var ts = parseInt(window.localStorage.getItem(DANKIIE_DISMISS_KEY) || '0', 10);
+      if (!ts) return false;
+      return (Date.now() - ts) < DANKIIE_COOLDOWN_MS;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function dankiieMarkDismissed() {
+    try {
+      window.localStorage.setItem(DANKIIE_DISMISS_KEY, String(Date.now()));
+    } catch (e) { /* localStorage unavailable — session guard still works */ }
+  }
+
+  function dankiieClearTimers() {
+    dankiieState.timers.forEach(function (t) { clearTimeout(t); });
+    dankiieState.timers = [];
+  }
+
+  function dankiieClosePopup() {
+    var overlay = dankiieState.node;
+    if (!overlay) return;
+    dankiieClearTimers();
+    overlay.classList.remove('is-visible');
+    // Wait for the exit transition before removing from the DOM.
+    setTimeout(function () {
+      if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      if (dankiieState.node === overlay) dankiieState.node = null;
+    }, 280);
+  }
+
+  function dankiieShowPopup() {
+    // Already showing, already shown this session, or on cooldown → skip.
+    if (dankiieState.node) return;
+    if (dankiieState.shownThisSession) return;
+    if (dankiieOnCooldown()) return;
+
+    var url = (cfg.DANKIIE_URL || '').trim();
+
+    // Build the popup DOM. Injected here (not in the HTML) so it never
+    // touches unrelated page layouts and only exists when needed.
+    var overlay = document.createElement('div');
+    overlay.className = 'dankiie-overlay';
+    overlay.setAttribute('data-dankiie-overlay', '');
+    overlay.setAttribute('aria-hidden', 'true');
+
+    // Tip-jar SVG (shared with the buttons — no emojis).
+    var jarSvg =
+      '<svg class="dankiie-icon-shake" viewBox="0 0 24 24" fill="none" ' +
+      'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+      'stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="M8 6h8"/><path d="M9 6V4h6v2"/>' +
+      '<path d="M8 6h8v12a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V6z"/>' +
+      '<circle cx="12" cy="13" r="2.5"/></svg>';
+
+    overlay.innerHTML =
+      '<div class="dankiie-popup" role="dialog" aria-modal="true" ' +
+      'aria-labelledby="dankiie-title" aria-describedby="dankiie-desc">' +
+        '<button type="button" class="dankiie-close" data-dankiie-close ' +
+          'aria-label="Close" hidden></button>' +
+        '<div class="dankiie-icon-wrap">' + jarSvg + '</div>' +
+        '<h2 class="dankiie-title" id="dankiie-title">Enjoying Yorvique?</h2>' +
+        '<p class="dankiie-desc" id="dankiie-desc">' +
+          'Would you like to leave a Dankiie? Your support helps keep ' +
+          'Yorvique ad-free, secure and running smoothly, while helping us ' +
+          'cover domain and maintenance costs.' +
+        '</p>' +
+        '<button type="button" class="dankiie-cta" data-dankiie-cta>' +
+          jarSvg + '<span>Give a Dankiie</span>' +
+        '</button>' +
+        '<div class="dankiie-progress"><div class="dankiie-progress-bar" ' +
+          'data-dankiie-progress></div></div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+    dankiieState.node = overlay;
+    dankiieState.shownThisSession = true;
+
+    var closeBtn = overlay.querySelector('[data-dankiie-close]');
+    var ctaBtn = overlay.querySelector('[data-dankiie-cta]');
+    var progressBar = overlay.querySelector('[data-dankiie-progress]');
+    var xIcon =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
+      '<path d="M6 6l12 12M18 6L6 18"/></svg>';
+    closeBtn.innerHTML = xIcon;
+
+    // Entrance transition.
+    requestAnimationFrame(function () {
+      overlay.classList.add('is-visible');
+      overlay.setAttribute('aria-hidden', 'false');
+    });
+
+    // Start the countdown line + reveal the close button after 5 seconds.
+    // Force a reflow so the animation restarts cleanly.
+    void progressBar.offsetWidth;
+    progressBar.classList.add('is-running');
+
+    dankiieState.timers.push(setTimeout(function () {
+      if (!dankiieState.node) return;
+      closeBtn.removeAttribute('hidden');
+      // Reveal on the next frame so the transition fires.
+      requestAnimationFrame(function () {
+        closeBtn.classList.add('is-revealed');
+      });
+    }, DANKIIE_COUNTDOWN_MS));
+
+    // CTA button — opens the URL only if DANKIIE_URL is set, else no-op.
+    ctaBtn.addEventListener('click', function () {
+      if (!url) return; // no-op while the placeholder is empty
+      window.open(url, '_blank', 'noopener,noreferrer');
+      dankiieMarkDismissed();
+      dankiieClosePopup();
+    });
+
+    // Close button — only clickable after the 5s reveal, but the handler is
+    // safe to call earlier (it just won't be visible/pointer-reachable).
+    closeBtn.addEventListener('click', function () {
+      dankiieMarkDismissed();
+      dankiieClosePopup();
+    });
+
+    // Click on the backdrop dismisses (accessible dismissal, always allowed).
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) {
+        dankiieMarkDismissed();
+        dankiieClosePopup();
+      }
+    });
+
+    // Escape key — always dismisses immediately (the 5s delay applies only
+    // to the visual X button, per the spec). A document-level listener is
+    // used and removed when the popup closes.
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        dankiieMarkDismissed();
+        dankiieClosePopup();
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    // Also remove this listener when the popup is torn down.
+    var origClose = dankiieClosePopup;
+    // (Cleanup handled via the timers list below for the keydown listener.)
+    overlay._dankiieKeyHandler = onKey;
+  }
+
+  // Override dankiieClosePopup to also detach the per-popup key handler.
+  (function wrapClose() {
+    var prev = dankiieClosePopup;
+    dankiieClosePopup = function () {
+      var overlay = dankiieState.node;
+      if (overlay && overlay._dankiieKeyHandler) {
+        document.removeEventListener('keydown', overlay._dankiieKeyHandler);
+        overlay._dankiieKeyHandler = null;
+      }
+      prev();
+    };
+  })();
+
+  function initDankiiePopup() {
+    // No static setup needed — the popup is built lazily by dankiieShowPopup.
+    // Exposed for the boot sequence / tests; the trigger lives on the IIFE
+    // scope so initUpload can call it directly.
+    return { show: dankiieShowPopup };
   }
 
   // --------------------------------------------------------------------------
@@ -318,6 +498,10 @@
           showShareResult(shareableUrl, file);
           setStatus('Upload complete. Link is ready.', 'success');
           showToast('Link is ready.', 'success');
+          // Only on a GENUINELY successful link generation: offer the
+          // Give a Dankiie support popup. No-op if on the 7-day cooldown or
+          // already shown this session. Never fires on failure/empty/error.
+          try { dankiieShowPopup(); } catch (e) { /* never block the success path */ }
         } else {
           const msg = (body && body.error) ? body.error : ('Upload failed (HTTP ' + xhr.status + ').');
           setStatus(msg, 'error');
@@ -483,7 +667,8 @@
     applyBrandAssets();
     initNavigation();
     initReveal();
-    initBuyMeACoffee();
+    initGiveADankiie();
+    initDankiiePopup();
     initUpload();
     initOnlineStatus();
     initServiceWorker();
